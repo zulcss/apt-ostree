@@ -23,10 +23,6 @@ from apt_ostree.utils import run_command
 @pass_state_context
 @compose_options
 def create(state, repo, base, branch, edit):
-    if state.repo is None:
-        click.secho("You did not supply an ostree repository", fg="red")
-        sys.exit(1)
-
     if not state.repo.exists():
         click.secho(f"Creating ostree repository: {state.repo}")
         run_command(["ostree", "init", f"--repo={state.repo}",
@@ -34,19 +30,12 @@ def create(state, repo, base, branch, edit):
     else:
         click.secho(f"Found ostree repository: {state.repo}")
 
-    if state.branch is None:
-        click.secho("You did not supply an ostree branch.", fg="red")
-        sys.exit(1)
     click.secho(f"Found ostree branch: {state.branch}")
 
-    if state.base is None:
-        click.secho("You did not supply a configuration directory.", fg="red")
-        sys.exit(1)
     if not state.base.exists():
         click.secho("Configuration directory does not exist.", fg="red")
         sys.exit(1)
-    else:
-        click.secho(f"Found configuration directory: {state.base}")
+    click.secho(f"Found configuration directory: {state.base}")
 
     config = state.base.joinpath("bootstrap.yaml")
     if not config.exists():
