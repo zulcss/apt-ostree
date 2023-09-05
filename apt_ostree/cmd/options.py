@@ -97,6 +97,7 @@ def branch_option(f):
     return click.argument(
         "branch",
         nargs=1,
+        required=True,
         callback=callback
     )(f)
 
