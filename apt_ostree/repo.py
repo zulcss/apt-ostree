@@ -32,15 +32,15 @@ class Repo:
         log_step("Creating Debian package archive.")
         self.repo = self.repo.joinpath("conf")
         if not self.repo.exists():
-            log_step("Creating package feed directory")
+            log_step("Creating package feed directory.")
             self.repo.mkdir(parents=True, exist_ok=True)
 
         config = self.repo.joinpath("distributions")
         if config.exists():
-            log_step("Found existing configuration")
+            log_step("Found existing reprepro configuration.")
             sys.exit(1)
         else:
-            log_step("Creating reprepro configuration")
+            log_step("Creating reprepro configuration.")
             config.write_text(
                 textwrap.dedent(f"""\
                  Origin: {self.state.origin}
@@ -62,13 +62,10 @@ class Repo:
     def add(self):
         """Add Debian package(s) to repository."""
         for pkg in self.state.packages:
-            log_step(f"Adding {pkg}")
+            log_step(f"Adding {pkg}.")
             r = run_command(
                 ["reprepro", "-b", str(self.repo), "includedeb",
-                 self.state.release, pkg],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=True)
+                 self.state.release, pkg])
             if r.returncode == 0:
                 log_step(f"Successfully added {pkg}\n")
             else:
@@ -81,13 +78,16 @@ class Repo:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
-            )
+        )
+        # Repo not configured yet
+        if r.returncode == 254:
+            sys.exit(1)
         if r.returncode != 0:
             click.secho(r.stdout.decode("utf-8"))
-        if "Exiting" in r.stdout.decode("utf-8"):
+        if r.stdout and "Exiting" in r.stdout.decode("utf-8"):
             click.secho(r.stdout.decode("utf-8"))
         else:
-            table = Table()
+            table = Table(box=None)
             table.add_column("Package")
             table.add_column("Version")
             table.add_column("Release")
@@ -104,12 +104,10 @@ class Repo:
     def remove(self):
         """Remove a Debian package from an archive."""
         for pkg in self.state.packages:
-            log_step(f"Removing {pkg}")
+            log_step(f"Removing {pkg}.")
             r = run_command(
                 ["reprepro", "-b", str(self.repo), "remove",
                  self.state.release, pkg],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
                 check=True)
             if r.returncode == 0:
                 log_step(f"Successfully removed {pkg}\n")
