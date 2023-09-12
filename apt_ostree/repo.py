@@ -60,7 +60,7 @@ class Repo:
                 )
 
     def add(self):
-        """Add Debian package(s) to repository"""
+        """Add Debian package(s) to repository."""
         for pkg in self.state.packages:
             log_step(f"Adding {pkg}")
             r = run_command(
@@ -102,6 +102,7 @@ class Repo:
             self.console.print(table)
 
     def remove(self):
+        """Remove a Debian package from an archive."""
         for pkg in self.state.packages:
             log_step(f"Removing {pkg}")
             r = run_command(

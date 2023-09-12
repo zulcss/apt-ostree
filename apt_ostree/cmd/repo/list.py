@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
-import shutil
+import errno
 import sys
 
 import click
@@ -21,8 +21,13 @@ from apt_ostree.repo import Repo
 @feed_option
 @release_option
 def show(state, feed, release):
-    if shutil.which("reprepro") is None:
-        click.secho("reprepro was not found in your $PATH")
-        sys.exit(0)
-
-    Repo(state).show()
+    try:
+        Repo(state).show()
+    except KeyboardInterrupt:
+        click.secho("\n" + ("Exiting at your request."))
+        sys.exit(130)
+    except BrokenPipeError:
+        sys.exit()
+    except OSError as error:
+        if error.errno == errno.ENOSPC:
+            sys.exit("errror - No space left on device.")

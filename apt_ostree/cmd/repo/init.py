@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
-import shutil
+import errno
 import sys
 
 import click
@@ -15,7 +15,6 @@ from apt_ostree.cmd.options import feed_option
 from apt_ostree.cmd.options import origin_option
 from apt_ostree.cmd.options import release_option
 from apt_ostree.cmd import pass_state_context
-from apt_ostree.log import complete_step
 from apt_ostree.repo import Repo
 
 
@@ -25,10 +24,13 @@ from apt_ostree.repo import Repo
 @release_option
 @origin_option
 def init(state, feed, release, origin):
-    if shutil.which("reprepro") is None:
-        click.secho("reprepro was not found in your $PATH")
-        sys.exit(0)
-
-    with complete_step(
-            f"Creating Debian package repository in {state.feed}."):
+    try:
         Repo(state).init()
+    except KeyboardInterrupt:
+        click.secho("\n" + ("Exiting at your request."))
+        sys.exit(130)
+    except BrokenPipeError:
+        sys.exit()
+    except OSError as error:
+        if error.errno == errno.ENOSPC:
+            sys.exit("errror - No space left on device.")

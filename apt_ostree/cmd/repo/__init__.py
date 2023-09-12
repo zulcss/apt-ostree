@@ -13,7 +13,7 @@ from apt_ostree.cmd.repo.list import show
 from apt_ostree.cmd.repo.remove import remove
 
 
-@click.group(help="Commands to create/manage Debian package repository")
+@click.group(help="Create/manage Debian package repository.")
 @click.pass_context
 def repo(ctxt):
     pass
