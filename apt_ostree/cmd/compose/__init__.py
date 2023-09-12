@@ -11,7 +11,7 @@ from apt_ostree.cmd.compose.create import create
 from apt_ostree.cmd.compose.image import image
 
 
-@click.group(help="Commands to build ostree repo/image")
+@click.group(help="Commands to build ostree repo/image.")
 @click.pass_context
 def compose(ctxt):
     pass
