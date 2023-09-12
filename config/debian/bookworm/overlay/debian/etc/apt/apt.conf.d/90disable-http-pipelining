@@ -1,0 +1,4 @@
+# Work around issues with the APT downloader corrupting files and
+# causing "Hash Sum Mismatch" errors:
+# https://phabricator.collabora.com/T15071
+Acquire::http::Pipeline-Depth 0;

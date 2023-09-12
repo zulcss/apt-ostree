@@ -1,0 +1,9 @@
+# Exclude all kind of docs
+path-exclude=/usr/share/doc/*
+path-include=/usr/share/doc/*/copyright_report*
+path-include=/usr/share/doc/*/*.json*
+path-exclude=/usr/share/man/*
+path-exclude=/usr/share/info/*
+path-exclude=/usr/share/lintian/*
+path-exclude=/usr/share/linda/*
+path-exclude=/var/cache/man/*

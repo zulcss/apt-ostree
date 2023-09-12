@@ -8,21 +8,59 @@ mmdebstrap:
   suite: bookworm
   architectures: [amd64]
   components: [main, contrib, non-free, non-free-firmware]
-  vairant: minbase
 
+  # Customizations that happen before bootstrapping.
   setup-hooks:
     - 'sync-in overlay/debian/ /'
     - 'sync-in overlay/ostree/ /'
+    - 'sync-in overlay/auto-login/ /'
+    - 'sync-in overlay/firstboot/ /'
 
+  # Customizations that happen after boostrapping.
   customize-hooks:
+    - 'sync-in overlay/adduser/ /'
     - echo 'root:root' | chroot "$1" chpasswd
-    - echo "localhost" > $1/etc/hostname
+    - chroot $1 echo "localhost" > $1/etc/hostname
+    - systemctl disable --root=$1 apt-daily.timer cron
+    - systemctl enable --root="$1" firstboot systemd-networkd
+    - chroot $1 cp -alf /lib/systemd/resolv.conf /etc/resolv.conf
+    - chroot $1 cp -alf /usr/libexec/libostree/grub2-15_ostree /etc/grub.d/15_ostree
+    - chroot $1 cp -alf /usr/lib/os-release /etc/os-release
 
+  # Packages to install after bootstrapping.
   packages:
     - linux-image-amd64
     - firmware-linux
-
+    - sudo
     - ostree
     - ostree-boot
+    - libostree-1-1
+    - libostree-dev
     - systemd-boot
     - dracut
+    - grub-efi-amd64
+    - vim
+    - net-tools
+    - openssh-client
+    - openssh-server
+    - procps
+    - less
+    - dbus
+    - policykit-1
+    - libnss-resolve
+    - curl
+    - wget
+    - git-core
+    - rsync
+    - bubblewrap
+    - python3-apt
+    - python3-all
+    - python3-pip
+    - python3-pbr
+    - python3-gi
+    - python3-click
+    - bdebstrap
+    - gobject-introspection
+    - gir1.2-ostree-1.0
+    - software-properties-common
+    - libnss-systemd

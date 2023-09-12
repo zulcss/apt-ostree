@@ -1,0 +1,13 @@
+[Unit]
+Description=FirstBoot
+After=network.target apt-daily.service apt-daily-upgrade.service
+Before=rc-local.service
+ConditionFileNotEmpty=/usr/sbin/firstboot.sh
+
+[Service]
+ExecStart=/usr/sbin/firstboot.sh
+Type=oneshot
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

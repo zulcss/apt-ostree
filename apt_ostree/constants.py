@@ -10,7 +10,6 @@ VERSION = "0.1"
 # packages to exclude from systemd-tmpfiles check.
 excluded_packages = [
     "ucf",
-    "dpkg",
     "base-files",
     "systemd",
     "init-system-helpers",

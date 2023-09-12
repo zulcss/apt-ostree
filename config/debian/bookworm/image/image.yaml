@@ -5,7 +5,7 @@
 {{- $cmdline := or .cmdline "console=tty0 console=ttyS0,115200n8 rootwait rw fsck.mode=auto fsck.repair=yes systemd.gpt_auto=false" -}}
 {{- $branch := or .branch "debian/bookworm" -}}
 {{- $repo := or .repo "ostree_repo" -}}
-{{- $size := or .size "3G" -}}
+{{- $size := or .size "20G" -}}
 
 architecture: {{ $architecture }}
 
