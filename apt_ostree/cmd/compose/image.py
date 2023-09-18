@@ -18,7 +18,7 @@ from apt_ostree.image import Image
 @click.command(help="Create an raw image from ostree branch.")
 @pass_state_context
 @compose_options
-def image(state, repo, base, edit, branch):
+def image(state, repo, base, branch):
     try:
         Image(state).create_image()
     except KeyboardInterrupt:

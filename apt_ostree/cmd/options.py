@@ -42,19 +42,6 @@ def workspace_option(f):
     )(f)
 
 
-def edit_option(f):
-    def callback(ctxt, param, value):
-        state = ctxt.ensure_object(State)
-        state.edit = value
-        return value
-    return click.option(
-        "--edit",
-        is_flag=True,
-        help="Increase verbosity",
-        callback=callback
-    )(f)
-
-
 """compose options"""
 
 
@@ -106,7 +93,6 @@ def compose_options(f):
     f = repo_option(f)
     f = base_option(f)
     f = branch_option(f)
-    f = edit_option(f)
     return f
 
 

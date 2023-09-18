@@ -18,7 +18,7 @@ from apt_ostree.cmd import pass_state_context
 @click.command(short_help="Create treefile.")
 @pass_state_context
 @compose_options
-def create(state, repo, base, branch, edit):
+def create(state, repo, base, branch):
     try:
         Bootstrap(state).create_rootfs()
     except KeyboardInterrupt:

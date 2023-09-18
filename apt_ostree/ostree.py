@@ -24,13 +24,10 @@ class Ostree:
         cmd = ["ostree", "commit"]
         if repo:
             cmd += [f"--repo={repo}"]
-        if self.state.edit:
-            cmd += ["-e"]
-        else:
-            if subject:
-                cmd += [f"--subject={subject}"]
-            if msg:
-                cmd += [f"--body={msg}"]
+        if subject:
+            cmd += [f"--subject={subject}"]
+        if msg:
+            cmd += [f"--body={msg}"]
         if branch:
             cmd += [f"--branch={branch}"]
         cmd += [str(root)]
