@@ -76,6 +76,21 @@ def base_option(f):
 
 
 def branch_option(f):
+    """apt-ostree configuration directory option"""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.branch = value
+        return value
+    return click.option(
+        "--branch",
+        help="Ostree Branch",
+        nargs=1,
+        required=True,
+        callback=callback
+    )(f)
+
+
+def branch_argument(f):
     """ostree branch option"""
     def callback(ctxt, param, value):
         state = ctxt.ensure_object(State)
@@ -92,7 +107,7 @@ def branch_option(f):
 def compose_options(f):
     f = repo_option(f)
     f = base_option(f)
-    f = branch_option(f)
+    f = branch_argument(f)
     return f
 
 
@@ -159,4 +174,5 @@ def packages_option(f):
         "packages",
         nargs=-1,
         callback=callback,
+        required=True,
     )(f)

@@ -15,7 +15,10 @@ from apt_ostree.utils import run_command
 # pylint: disable=wrong-import-position
 import gi
 gi.require_version("OSTree", "1.0")
-from gi.repository import Gio, GLib, OSTree  # noqa: H301
+from gi.repository import Gio, GLib, OSTree  # noqa:H301
+
+# Using AT_FDCWD value from fcntl.h
+AT_FDCWD = -100
 
 
 class Ostree:
@@ -27,6 +30,7 @@ class Ostree:
                       repo=None,
                       branch=None,
                       subject=None,
+                      parent=None,
                       msg=None):
         """Commit rootfs to ostree repository."""
         cmd = ["ostree", "commit"]
@@ -36,8 +40,11 @@ class Ostree:
             cmd += [f"--subject={subject}"]
         if msg:
             cmd += [f"--body={msg}"]
+
         if branch:
             cmd += [f"--branch={branch}"]
+        if parent:
+            cmd += [f"--parent={parent}"]
         cmd += [str(root)]
         r = run_command(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return r
@@ -67,6 +74,27 @@ class Ostree:
                 sys.exit(1)
         return repo
 
+    def ostree_checkout(self, branch, rootfs):
+        """Checkout a branch from an ostree repository."""
+        repo = self.open_ostree()
+        ret, rev = repo.resolve_rev(branch, True)
+        opts = OSTree.RepoCheckoutAtOptions()
+        if rev:
+            try:
+                repo.checkout_at(opts, AT_FDCWD, str(rootfs), rev, None)
+            except GLib.GError as e:
+                click.secho(f"Failed to checkout {rev}: {e.message}", fg="red")
+                raise
+
+    def ostree_ref(self, branch):
+        """Find the commit id for a given reference."""
+        repo = self.open_ostree()
+        ret, rev = repo.resolve_rev(branch, True)
+        if not rev:
+            click.secho(f"{branch} not found in {self.state.repo}", fg="red")
+            sys.exit(1)
+        return rev
+
     def get_branch(self):
         """Get a branch in a current deployment."""
         if self.state.branch:
@@ -78,7 +106,8 @@ class Ostree:
             try:
                 refspec = origin.get_string("origin", "refspec")
             except GLib.Error as e:
-                # If not a "key not found" error then raise the exception
+                # If not a "key not found" error then
+                # raise the exception
                 if not e.matches(GLib.KeyFile.error_quark(),
                                  GLib.KeyFileError.KEY_NOT_FOUND):
                     raise (e)
