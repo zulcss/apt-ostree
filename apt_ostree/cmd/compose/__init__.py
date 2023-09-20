@@ -10,6 +10,7 @@ import click
 from apt_ostree.cmd.compose.commit import commit
 from apt_ostree.cmd.compose.create import create
 from apt_ostree.cmd.compose.image import image
+from apt_ostree.cmd.compose.install import install
 
 
 @click.group(help="Commands to build ostree repo/image.")
@@ -21,3 +22,4 @@ def compose(ctxt):
 compose.add_command(commit)
 compose.add_command(create)
 compose.add_command(image)
+compose.add_command(install)

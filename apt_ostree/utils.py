@@ -38,3 +38,44 @@ def run_command(cmd,
     except subprocess.CalledProcessError as e:
         click.secho(f"Failed to run command: {e}")
         raise
+
+
+def run_sandbox_command(
+    args,
+    rootfs,
+    stdin=None,
+    stdout=None,
+    stderr=None,
+    check=True,
+    env=None
+):
+    """Run a shell wrapped with bwrap."""
+    cmd = [
+        "bwrap",
+        "--proc", "/proc",
+        "--dev", "/dev",
+        "--dir", "/run",
+        "--dir", "/usr/etc",
+        "--symlink", "usr/etc", "/etc",
+        "--bind", "/tmp", "/tmp",
+        "--bind", f"{rootfs}/usr", "/usr",
+        "--bind", f"{rootfs}/usr/etc", "/usr/etc",
+        "--bind", f"{rootfs}/usr/rootdirs/var", "/var",
+        "--symlink", "/usr/lib", "/lib",
+        "--symlink", "/usr/lib64", "/lib64",
+        "--symlink", "/usr/bin", "/bin",
+        "--symlink", "/usr/sbin", "/sbin",
+        "--share-net",
+        "--die-with-parent",
+        "--chdir", "/",
+    ]
+    cmd += args
+
+    return run_command(
+        cmd,
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        check=check,
+        env=env,
+    )

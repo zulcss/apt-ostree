@@ -83,7 +83,7 @@ def branch_option(f):
         return value
     return click.option(
         "--branch",
-        help="Ostree Branch",
+        help="Ostree branch to use",
         nargs=1,
         required=True,
         callback=callback
