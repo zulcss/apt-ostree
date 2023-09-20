@@ -11,6 +11,7 @@ from apt_ostree.cmd.compose.commit import commit
 from apt_ostree.cmd.compose.create import create
 from apt_ostree.cmd.compose.image import image
 from apt_ostree.cmd.compose.install import install
+from apt_ostree.cmd.compose.upgrade import upgrade
 
 
 @click.group(help="Commands to build ostree repo/image.")
@@ -23,3 +24,4 @@ compose.add_command(commit)
 compose.add_command(create)
 compose.add_command(image)
 compose.add_command(install)
+compose.add_command(upgrade)

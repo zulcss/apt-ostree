@@ -32,3 +32,12 @@ class Apt:
         if r.returncode != 0:
             click.secho("Failed to run apt-get install", fg="red")
         return r
+
+    def apt_upgrade(self, rootfs):
+        """Run apt-get upgrade."""
+        r = run_sandbox_command(
+            ["apt-get", "upgrade"],
+            rootfs)
+        if r.returncode != 0:
+            click.secho("Failed to run apt-get upgrade", fg="red")
+        return r

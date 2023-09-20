@@ -37,3 +37,21 @@ class Packages:
             msg=f"installed {packages}",
         )
         self.deploy.cleanup(str(rootfs))
+
+    def upgrade(self):
+        """Use apt to install Debian packages."""
+        rootfs = self.deploy.get_sysroot()
+        branch = self.ostree.get_branch()
+
+        self.deploy.prestaging(rootfs)
+        self.apt.apt_update(rootfs)
+        self.apt.apt_upgrade(rootfs)
+        self.deploy.poststaging(rootfs)
+        self.ostree.ostree_commit(
+            root=str(rootfs),
+            branch=branch,
+            repo=self.state.repo,
+            subject="Upgrade apckages",
+            msg="Upgraded packages",
+        )
+        self.deploy.cleanup(str(rootfs))
