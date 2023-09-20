@@ -55,3 +55,20 @@ class Packages:
             msg="Upgraded packages",
         )
         self.deploy.cleanup(str(rootfs))
+
+    def uninstall(self, packages):
+        """Use apt to uninstall Debian packages."""
+        rootfs = self.deploy.get_sysroot()
+        branch = self.ostree.get_branch()
+
+        self.deploy.prestaging(rootfs)
+        self.apt.apt_uninstall(packages, rootfs)
+        self.deploy.poststaging(rootfs)
+        self.ostree.ostree_commit(
+            root=str(rootfs),
+            branch=branch,
+            repo=self.state.repo,
+            subject="Uninstall package",
+            msg=f"Uninstalled {packages}",
+        )
+        self.deploy.cleanup(str(rootfs))

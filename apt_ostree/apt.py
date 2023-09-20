@@ -41,3 +41,13 @@ class Apt:
         if r.returncode != 0:
             click.secho("Failed to run apt-get upgrade", fg="red")
         return r
+
+    def apt_uninstall(self, packages, rootfs):
+        """Run apt-get remove."""
+        cmd = ["apt-get", "remove"]
+        if packages:
+            cmd += packages.split()
+        r = run_sandbox_command(cmd, rootfs)
+        if r.returncode != 0:
+            click.secho("Failed to run apt-get remove", fg="red")
+        return r

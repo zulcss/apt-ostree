@@ -11,6 +11,7 @@ from apt_ostree.cmd.compose.commit import commit
 from apt_ostree.cmd.compose.create import create
 from apt_ostree.cmd.compose.image import image
 from apt_ostree.cmd.compose.install import install
+from apt_ostree.cmd.compose.uninstall import uninstall
 from apt_ostree.cmd.compose.upgrade import upgrade
 
 
@@ -25,3 +26,4 @@ compose.add_command(create)
 compose.add_command(image)
 compose.add_command(install)
 compose.add_command(upgrade)
+compose.add_command(uninstall)
