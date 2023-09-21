@@ -180,11 +180,27 @@ def enablerepo_option(f):
     """Enable Debian package feed."""
     def callback(ctxt, param, value):
         state = ctxt.ensure_object(State)
-        state.repo = value
+        state.enable = value
         return value
     return click.option(
         "--enablerepo",
-        help="Repo source list",
+        help="Enable repo source",
+        is_flag=True,
+        default=False,
+        required=True,
+        callback=callback
+    )(f)
+
+
+def disablerepo_option(f):
+    """Disable Debian package feed."""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.disable = value
+        return value
+    return click.option(
+        "--disablerepo",
+        help="Disable Repo source",
         is_flag=True,
         default=False,
         required=True,

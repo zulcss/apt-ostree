@@ -118,6 +118,43 @@ class Repo:
             else:
                 log_step(f"Failed to remove {pkg}\n")
 
+    def disable_repo(self):
+        """Disable Debian feed via apt-add-repository."""
+        rootfs = self.deploy.get_sysroot()
+        branch = self.ostree.get_branch()
+        self.deploy.prestaging(rootfs)
+        self.console.print(
+            "Disablng Debian package feeds.")
+        cmd = [
+            "apt-add-repository",
+            "-r", "-y", "-n",
+            self.state.sources
+        ]
+        r = utils.run_sandbox_command(
+            cmd,
+            rootfs,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            click.secho("Failed to disable package feed.", fg="red")
+            sys.exit(1)
+        self.console.print(
+            f"Successfully disabled  \"{self.state.sources}\".",
+            highlight=False)
+        self.deploy.poststaging(rootfs)
+
+        self.console.print(f"Committing to {branch} to repo.")
+        r = self.ostree.ostree_commit(
+            root=str(rootfs),
+            branch=branch,
+            repo=self.state.repo,
+            subject="Disabled package feed.",
+            msg=f"Disabled {self.state.sources}",
+        )
+        if r.returncode != 0:
+            click.secho("Failed to commit to repository", fg="red")
+        self.deploy.cleanup(str(rootfs))
+
     def add_repo(self):
         """Enable Debian feed via apt-add-repository."""
         rootfs = self.deploy.get_sysroot()

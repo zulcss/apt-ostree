@@ -35,6 +35,9 @@ class Compose:
             click.secho(f"Failed to add repo: {e}", fg="red")
             sys.exit(1)
 
+    def disablerepo(self):
+        self.repo.disable_repo()
+
     def commit(self, parent):
         """Commit changes to an ostree repo."""
         self.console.print(f"Cloning {self.state.branch} from {parent}.",

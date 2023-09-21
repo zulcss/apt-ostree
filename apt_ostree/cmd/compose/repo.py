@@ -11,6 +11,7 @@ import sys
 import click
 
 from apt_ostree.cmd.options import branch_option
+from apt_ostree.cmd.options import disablerepo_option
 from apt_ostree.cmd.options import enablerepo_option
 from apt_ostree.cmd.options import repo_option
 from apt_ostree.cmd.options import source_option
@@ -24,14 +25,19 @@ from apt_ostree.compose import Compose
 @branch_option
 @repo_option
 @enablerepo_option
+@disablerepo_option
 @source_option
 def repo(state,
          branch,
          repo,
          enablerepo,
+         disablerepo,
          sources):
     try:
-        Compose(state).enablerepo()
+        if enablerepo:
+            Compose(state).enablerepo()
+        if disablerepo:
+            Compose(state).disablerepo()
     except KeyboardInterrupt:
         click.secho("\n" + ("Exiting at your request."))
         sys.exit(130)
