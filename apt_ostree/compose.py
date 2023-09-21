@@ -12,18 +12,28 @@ import click
 from rich.console import Console
 
 from apt_ostree.ostree import Ostree
+from apt_ostree.repo import Repo
 
 
 class Compose:
     def __init__(self, state):
         self.state = state
         self.ostree = Ostree(self.state)
+        self.repo = Repo(self.state)
         self.console = Console()
 
         self.workspace = self.state.workspace
         self.workdir = self.state.workspace.joinpath("deployment")
         self.workdir.mkdir(parents=True, exist_ok=True)
         self.rootfs = None
+
+    def enablerepo(self):
+        """Enable Debian package feed."""
+        try:
+            self.repo.add_repo()
+        except Exception as e:
+            click.secho(f"Failed to add repo: {e}", fg="red")
+            sys.exit(1)
 
     def commit(self, parent):
         """Commit changes to an ostree repo."""

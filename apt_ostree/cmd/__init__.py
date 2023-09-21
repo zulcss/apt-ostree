@@ -13,6 +13,7 @@ class State:
         self.workspace = None
         self.repo = None
         self.branch = None
+        self.feed = None
 
 
 # pass state between command and apt-ostree sub-commands

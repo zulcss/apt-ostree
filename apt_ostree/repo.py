@@ -13,14 +13,18 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from apt_ostree.deploy import Deploy
 from apt_ostree.log import log_step
-from apt_ostree.utils import run_command
+from apt_ostree.ostree import Ostree
+from apt_ostree import utils
 
 
 class Repo:
     def __init__(self, state):
         self.state = state
         self.repo = self.state.feed
+        self.deploy = Deploy(self.state)
+        self.ostree = Ostree(self.state)
         self.console = Console()
 
         self.label = "StarlingX project udpates."
@@ -63,7 +67,7 @@ class Repo:
         """Add Debian package(s) to repository."""
         for pkg in self.state.packages:
             log_step(f"Adding {pkg}.")
-            r = run_command(
+            r = utils.run_command(
                 ["reprepro", "-b", str(self.repo), "includedeb",
                  self.state.release, pkg])
             if r.returncode == 0:
@@ -73,7 +77,7 @@ class Repo:
 
     def show(self):
         """Display a table of packages in the archive."""
-        r = run_command(
+        r = utils.run_command(
             ["reprepro", "-b", str(self.repo), "list", self.state.release],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -105,7 +109,7 @@ class Repo:
         """Remove a Debian package from an archive."""
         for pkg in self.state.packages:
             log_step(f"Removing {pkg}.")
-            r = run_command(
+            r = utils.run_command(
                 ["reprepro", "-b", str(self.repo), "remove",
                  self.state.release, pkg],
                 check=True)
@@ -113,3 +117,39 @@ class Repo:
                 log_step(f"Successfully removed {pkg}\n")
             else:
                 log_step(f"Failed to remove {pkg}\n")
+
+    def add_repo(self):
+        """Enable Debian feed via apt-add-repository."""
+        rootfs = self.deploy.get_sysroot()
+        branch = self.ostree.get_branch()
+        self.deploy.prestaging(rootfs)
+        self.console.print(
+            "Enabling addtional Debian package feeds.")
+        cmd = [
+            "apt-add-repository",
+            "-y", "-n",
+            self.state.sources
+        ]
+        r = utils.run_sandbox_command(
+            cmd,
+            rootfs,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            click.secho("Failed to add package feed.", fg="red")
+            sys.exit(1)
+        self.console.print(
+            f"Successfully added \"{self.state.sources}\".", highlight=False)
+        self.deploy.poststaging(rootfs)
+
+        self.console.print(f"Committing to {branch} to repo.")
+        r = self.ostree.ostree_commit(
+            root=str(rootfs),
+            branch=branch,
+            repo=self.state.repo,
+            subject="Enable package feed.",
+            msg=f"Enabled {self.state.sources}",
+        )
+        if r.returncode != 0:
+            click.secho("Failed to commit to repository", fg="red")
+        self.deploy.cleanup(str(rootfs))

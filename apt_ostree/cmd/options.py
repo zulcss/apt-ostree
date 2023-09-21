@@ -161,6 +161,37 @@ def origin_option(f):
     )(f)
 
 
+def source_option(f):
+    """Repo source line option"""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.sources = value
+        return value
+    return click.option(
+        "--sources",
+        help="Repo source list",
+        nargs=1,
+        required=True,
+        callback=callback
+    )(f)
+
+
+def enablerepo_option(f):
+    """Enable Debian package feed."""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.repo = value
+        return value
+    return click.option(
+        "--enablerepo",
+        help="Repo source list",
+        is_flag=True,
+        default=False,
+        required=True,
+        callback=callback
+    )(f)
+
+
 """packages"""
 
 
