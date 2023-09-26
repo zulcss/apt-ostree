@@ -11,6 +11,8 @@ class State:
     def __init__(self):
         self.debug = False
         self.workspace = None
+        self.repo = None
+        self.branch = None
 
 
 # pass state between command and apt-ostree sub-commands
