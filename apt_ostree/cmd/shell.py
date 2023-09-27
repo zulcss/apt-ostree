@@ -10,6 +10,7 @@ import logging
 import click
 
 from apt_ostree.cmd.compose import compose
+from apt_ostree.cmd.deploy import deploy
 from apt_ostree.cmd.options import debug_option
 from apt_ostree.cmd.options import workspace_option
 from apt_ostree.cmd import pass_state_context
@@ -41,6 +42,7 @@ def main():
 
 
 cli.add_command(compose)
+cli.add_command(deploy)
 cli.add_command(repo)
 cli.add_command(status)
 cli.add_command(version)
