@@ -33,8 +33,8 @@ class Packages:
             root=str(rootfs),
             branch=branch,
             repo=self.state.repo,
-            subject="install package",
-            msg=f"installed {packages}",
+            subject="Install package",
+            msg=f"installed {' '.join(packages)}.",
         )
         self.deploy.cleanup(str(rootfs))
 
@@ -69,6 +69,6 @@ class Packages:
             branch=branch,
             repo=self.state.repo,
             subject="Uninstall package",
-            msg=f"Uninstalled {packages}",
+            msg=f"uninstalled {' '.join(packages)}.",
         )
         self.deploy.cleanup(str(rootfs))

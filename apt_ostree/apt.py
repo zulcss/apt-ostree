@@ -46,7 +46,7 @@ class Apt:
         """Run apt-get remove."""
         cmd = ["apt-get", "remove"]
         if packages:
-            cmd += packages.split()
+            cmd += packages
         r = run_sandbox_command(cmd, rootfs)
         if r.returncode != 0:
             click.secho("Failed to run apt-get remove", fg="red")

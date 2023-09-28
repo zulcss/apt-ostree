@@ -11,11 +11,14 @@ import click
 
 from apt_ostree.cmd.compose import compose
 from apt_ostree.cmd.deploy import deploy
+from apt_ostree.cmd.install import install
 from apt_ostree.cmd.options import debug_option
 from apt_ostree.cmd.options import workspace_option
 from apt_ostree.cmd import pass_state_context
 from apt_ostree.cmd.repo import repo
 from apt_ostree.cmd.status import status
+from apt_ostree.cmd.uninstall import uninstall
+from apt_ostree.cmd.upgrade import upgrade
 from apt_ostree.cmd.version import version
 from apt_ostree.log import setup_log
 
@@ -43,6 +46,9 @@ def main():
 
 cli.add_command(compose)
 cli.add_command(deploy)
+cli.add_command(install)
 cli.add_command(repo)
 cli.add_command(status)
+cli.add_command(uninstall)
+cli.add_command(upgrade)
 cli.add_command(version)
