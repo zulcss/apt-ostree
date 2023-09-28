@@ -7,7 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 import os
 import shutil
+import sys
 
+import click
 from rich.console import Console
 
 from apt_ostree.ostree import Ostree
@@ -60,3 +62,38 @@ class Deploy:
                 shutil.rmtree(self.rootfs)
             self.ostree.ostree_checkout(branch, self.rootfs)
         return self.rootfs
+
+    def deploy(self, update, reboot):
+        """Run ostree admin deploy."""
+        ref = self.ostree.ostree_ref(self.state.branch)
+        if not ref:
+            click.secho(
+                f"Unable to find branch: {self.state.branch}.", fg="red")
+            sys.exit(1)
+
+        r = utils.run_command(
+            ["ostree", "admin", "deploy", self.state.branch]
+        )
+        if r.returncode != 0:
+            click.secho("Failed to deploy.", fg="red")
+            sys.exit(1)
+
+        if update:
+            self.console.print("Updating grub.")
+            r = utils.run_command(
+                    ["update-grub"]
+                )
+            if r.returncode != 0:
+                click.secho("Failed to update grub.", fg="red")
+                sys.exit(1)
+
+        if reboot:
+            self.console.print("Rebooting now.")
+            r = utils.run_command(
+                ["shutdown", "-r", "now"]
+            )
+            if r.returncode != 0:
+                click.secho("Failed to reboot.", fg="red")
+                sys.exit(1)
+        else:
+            self.console.print("Please reboot for the changes to take affect.")
