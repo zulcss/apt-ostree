@@ -30,4 +30,4 @@ def show(state, feed, release):
         sys.exit()
     except OSError as error:
         if error.errno == errno.ENOSPC:
-            sys.exit("errror - No space left on device.")
+            sys.exit("error - No space left on device.")
