@@ -9,6 +9,7 @@ import logging
 
 import click
 
+from apt_ostree.cmd.apt import apt
 from apt_ostree.cmd.compose import compose
 from apt_ostree.cmd.deploy import deploy
 from apt_ostree.cmd.install import install
@@ -45,6 +46,7 @@ def main():
     cli(prog_name="apt-ostree")
 
 
+cli.add_command(apt)
 cli.add_command(compose)
 cli.add_command(deploy)
 cli.add_command(install)
