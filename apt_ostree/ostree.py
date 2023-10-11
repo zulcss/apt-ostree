@@ -63,6 +63,10 @@ class Ostree:
             cmd += [f"--parent={parent}"]
         cmd += [str(root)]
         r = run_command(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            click.secho("Failed to commit to tree.", fg="red")
+            sys.exit(1)
+        click.secho(f"Sucessfully commited to {branch}.")
         return r
 
     def get_sysroot(self):
