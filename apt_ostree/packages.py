@@ -87,20 +87,65 @@ class Packages:
     def upgrade(self):
         """Use apt to install Debian packages."""
         rootfs = self.deploy.get_sysroot()
-        branch = self.ostree.get_branch()
+        if not rootfs.exists():
+            click.secho("Unable to determine rootfs: {rootfs}", fg="red")
+            sys.exit(1)
 
+        # Step 0 - Setup prestaging.
         self.deploy.prestaging(rootfs)
+
+        # Step 1 - Update the package cache.
         self.apt.apt_update(rootfs)
+        cache = self.apt.cache(rootfs)
+
+        # Step 2 - Check for updates.
+        self.console.print(
+            "Checking for upgradable packages."
+        )
+        # Fake upgrading so we can determine the packages
+        # that need to be upgraded. This is done so we
+        # can check for any updates before doing anything
+        # else.
+        cache.upgrade(False)
+        packages = [package.name for package in cache.get_changes()]
+        if len(packages) == 0:
+            click.secho("No package to upgrade.", fg="red")
+            sys.exit(1)
+
+        # Step 3 - Build the commit message
+        r = self.apt.apt_list(rootfs, "--upgradable")
+        commit = "Packages upgraded: \n\n"
+        for line in r.stdout.splitlines():
+            line = line.decode("utf-8").strip()
+            if line != "Listing...":
+                columns = line.split(" ")
+
+                name, repo = columns[0].split("/")
+                current = columns[5][:-1]
+                update = columns[1]
+
+                commit += f"- {name} ({current} -> {update})\n"
+
+        # Step 4 - Do the upgrade.
         self.apt.apt_upgrade(rootfs)
+
+        # Step 5 - Poststaging.
         self.deploy.poststaging(rootfs)
+
+        # Step 6 - Commit to the repo
+        self.console.print(
+            f"Commiting to {self.ostree.get_branch()}. Please wait",
+            highlight=False)
         self.ostree.ostree_commit(
             root=str(rootfs),
-            branch=branch,
+            branch=self.ostree.get_branch(),
             repo=self.state.repo,
-            subject="Upgrade apckages",
-            msg="Upgraded packages",
+            subject="Package Upgrade",
+            msg=commit,
         )
-        self.deploy.cleanup(str(rootfs))
+
+        # Step 7 - Cleanup
+        self.deploy.cleanup(rootfs)
 
     def uninstall(self, packages):
         """Use apt to uninstall Debian packages."""

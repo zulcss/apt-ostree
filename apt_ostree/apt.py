@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import subprocess
 import sys
 
 import apt
@@ -49,6 +50,14 @@ class Apt:
         if r.returncode != 0:
             click.secho("Failed to run apt-get install", fg="red")
         return r
+
+    def apt_list(self, rootfs, action):
+        """Show package versions."""
+        return run_sandbox_command(
+                ["apt", "list", action],
+                rootfs,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL)
 
     def apt_upgrade(self, rootfs):
         """Run apt-get upgrade."""
