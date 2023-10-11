@@ -42,6 +42,14 @@ class Ostree:
             self.logging.error(f"Failed to create repo: {e}")
             sys.exit(1)
 
+    def ostree_pull(self, repo_dir):
+        """Copy a branch from an existing repo into a new repo."""
+        return run_command(
+            ["ostree", "pull-local", f"--repo={repo_dir}",
+             str(self.state.repo), str(self.state.branch)],
+            check=True
+        )
+
     def ostree_commit(self,
                       root=None,
                       repo=None,

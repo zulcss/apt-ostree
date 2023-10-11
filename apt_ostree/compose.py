@@ -5,6 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 import logging
+import pathlib
 import shutil
 import sys
 
@@ -37,6 +38,32 @@ class Compose:
 
         self.logging.info(f"Found ostree repository: {self.state.repo}")
         self.ostree.init()
+
+    def backup(self, export_dir):
+        """Export branch to a new ostree repo."""
+        export_dir = pathlib.Path(export_dir)
+        if not export_dir.exists():
+            self.logging.error("Ostree export repo does not exist")
+            sys.exit(1)
+
+        # Copy the existing branch from one repository to another.
+        self.console.print(
+            f"Pulling from {self.state.branch} to {export_dir}.",
+            highlight=False)
+        self.ostree.ostree_pull(export_dir)
+
+    def restore(self, import_dir):
+        """Import a branch into a repostiory."""
+        import_dir = pathlib.Path(import_dir)
+        if not import_dir.exists():
+            self.logging.error("Ostree export repo does not exist")
+            sys.exit(1)
+
+        # Copy the existing branch from one repository to another.
+        self.console.print(
+            f"Pulling from {self.state.branch} to {import_dir}.",
+            highlight=False)
+        self.ostree.ostree_pull(import_dir)
 
     def enablerepo(self):
         """Enable Debian package feed."""
