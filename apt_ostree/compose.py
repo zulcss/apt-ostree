@@ -27,6 +27,16 @@ class Compose:
         self.workdir.mkdir(parents=True, exist_ok=True)
         self.rootfs = None
 
+    def create(self):
+        """Create an OSTree repository."""
+        if self.state.repo.exists():
+            click.secho(
+                f"Repository already exists: {self.state.repo}", fg="red")
+            sys.exit(1)
+
+        click.secho(f"Found ostree repository: {self.state.repo}")
+        self.ostree.init()
+
     def enablerepo(self):
         """Enable Debian package feed."""
         try:

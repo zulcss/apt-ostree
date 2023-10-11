@@ -27,15 +27,6 @@ class Bootstrap:
 
     def create_rootfs(self):
         """Create a Debian system from a configuration file."""
-        if not self.state.repo.exists():
-            click.secho(f"Creating ostree repository: {self.state.repo}")
-            run_command(["ostree", "init", f"--repo={self.state.repo}",
-                         "--mode=archive-z2"])
-        else:
-            click.secho(f"Found ostree repository: {self.state.repo}")
-
-        click.secho(f"Found ostree branch: {self.state.branch}")
-
         if not self.state.base.exists():
             click.secho("Configuration directory does not exist.", fg="red")
             sys.exit(1)
@@ -72,6 +63,8 @@ class Bootstrap:
                      self.state.branch), "--target", str(rootfs),
                  "--output", str(workdir)], cwd=self.state.base)
 
+        self.ostree.ostree_init()
+        click.secho(f"Found ostree branch: {self.state.branch}")
         self.create_ostree(rootfs)
         r = self.ostree.ostree_commit(
             rootfs,
