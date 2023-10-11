@@ -4,7 +4,6 @@ Copyright (c) 2023 Wind River Systems, Inc.
 SPDX-License-Identifier: Apache-2.0
 
 """
-
 import sys
 
 import click
@@ -105,16 +104,42 @@ class Packages:
     def uninstall(self, packages):
         """Use apt to uninstall Debian packages."""
         rootfs = self.deploy.get_sysroot()
-        branch = self.ostree.get_branch()
+        if not rootfs.exists():
+            click.secho("Unable to determine rootfs: {rootfs}", fg="red")
+            sys.exit(1)
 
+        # Step 0 - Run the prestaging steps.
         self.deploy.prestaging(rootfs)
+
+        # Step 1 - Update the package cache in the deployment.
+        self.apt.apt_update(rootfs)
+        cache = self.apt.cache(rootfs)
+
+        # Step 3 - Check for package depenendencies so we can
+        #          generate a commit message at the end.
+        commit = "Packages uninstalled: \n\n"
+        for pkg in packages:
+            version = self.apt.get_version(cache, pkg)
+            commit += f"- {pkg} ({version})\n"
+
+        # Step 4 - Uninstall the valid packages.
         self.apt.apt_uninstall(packages, rootfs)
+
+        # Step 5 - Run poststaging steps.
         self.deploy.poststaging(rootfs)
+
+        # Step 6 - Ostree commit.
+        self.console.print(
+            f"Commiting to {self.ostree.get_branch()}. Please wait",
+            highlight=False)
+
         self.ostree.ostree_commit(
             root=str(rootfs),
-            branch=branch,
+            branch=self.ostree.get_branch(),
             repo=self.state.repo,
-            subject="Uninstall package",
-            msg=f"uninstalled {' '.join(packages)}.",
+            subject="Uninstall packages",
+            msg=commit,
         )
-        self.deploy.cleanup(str(rootfs))
+
+        # Step 7 - Cleanup
+        self.deploy.cleanup(rootfs)

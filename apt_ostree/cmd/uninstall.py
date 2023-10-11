@@ -1,12 +1,16 @@
 """
 Copyright (c) 2023 Wind River Systems, Inc.
+
 SPDX-License-Identifier: Apache-2.0
+
 """
+
 import errno
 import sys
 
 import click
 
+from apt_ostree.cmd.options import packages_option
 from apt_ostree.cmd import pass_state_context
 from apt_ostree.packages import Packages
 
@@ -14,9 +18,11 @@ from apt_ostree.packages import Packages
 @click.command(
     help="Remove Debian packages.")
 @pass_state_context
-def uninstall(state):
+@packages_option
+def uninstall(state,
+              packages):
     try:
-        Packages(state).uninstall()
+        Packages(state).uninstall(packages)
     except KeyboardInterrupt:
         click.secho("\n" + ("Exiting at your request."))
         sys.exit(130)
