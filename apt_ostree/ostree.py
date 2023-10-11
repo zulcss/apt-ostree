@@ -16,6 +16,7 @@ from apt_ostree.utils import run_command
 import gi
 gi.require_version("OSTree", "1.0")
 from gi.repository import Gio, GLib, OSTree  # noqa:H301
+from gi.repository.GLib import Variant, VariantDict  # noqa:H301
 
 # Using AT_FDCWD value from fcntl.h
 AT_FDCWD = -100
@@ -115,3 +116,63 @@ class Ostree:
                 refspec = origin.get_string('origin', 'baserefspec')
 
             return refspec
+
+    def remotes_list(self):
+        """Fetch list of remote hosts."""
+        try:
+            repo = self.open_ostree()
+            remotes = repo.remote_list()
+            return remotes
+        except GLib.GError as e:
+            click.secho(f"Failed to fetch remotes: {e}")
+
+    def get_remote_url(self, remote):
+        """Fetch the URL of a remote."""
+        repo = self.open_ostree()
+        _, url = repo.remote_get_url(remote)
+        return url
+
+    def remote_add(self):
+        """Setup a remote given a URL."""
+        with self.console.status(f"Adding remote {self.state.remote}"):
+            repo = self.open_ostree()
+
+            # Turn off gpg verification for now.
+            options = None
+            vd = VariantDict.new()
+            vd.insert_value('gpg-verify', Variant.new_boolean(False))
+            options = vd.end()
+
+            try:
+                check = repo.remote_change(
+                    None,
+                    OSTree.RepoRemoteChange.ADD_IF_NOT_EXISTS,
+                    self.state.remote,
+                    self.state.url,
+                    options,
+                    None)
+                if check:
+                    self.console.print(
+                        f"Successfully added {self.state.remote}.")
+            except GLib.GError as e:
+                click.secho(f"Failed to add remote: {e}")
+
+    def remote_remove(self):
+        """Delete a remote."""
+        try:
+            repo = self.open_ostree()
+            check = repo.remote_delete(self.state.remote, None)
+            if check:
+                self.console.print(
+                    f"Successfully removed {self.state.remote}.")
+        except GLib.GError as e:
+            click.secho(f"Failed to remove remote: {e}")
+
+    def remote_refs(self, remote):
+        try:
+            repo = self.open_ostree()
+            _, refs = repo.remote_list_refs(remote)
+            return refs
+        except GLib.GError as e:
+            click.secho(f"Failed to fetch refs: {e}")
+            sys.exit(1)

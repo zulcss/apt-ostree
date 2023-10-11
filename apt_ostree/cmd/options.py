@@ -223,3 +223,33 @@ def packages_option(f):
         callback=callback,
         required=True,
     )(f)
+
+
+"""remotes"""
+
+
+def remote_option(f):
+    """Name of remote host."""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.remote = value
+        return value
+    return click.option(
+        "--remote",
+        help="Remote stie",
+        callback=callback
+    )(f)
+
+
+def url_option(f):
+    """Name of remote host."""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.url = value
+        return value
+    return click.option(
+        "--url",
+        help="Site URL",
+        required=True,
+        callback=callback
+    )(f)
