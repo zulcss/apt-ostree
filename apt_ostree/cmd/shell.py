@@ -15,6 +15,7 @@ from apt_ostree.cmd.install import install
 from apt_ostree.cmd.options import debug_option
 from apt_ostree.cmd.options import workspace_option
 from apt_ostree.cmd import pass_state_context
+from apt_ostree.cmd.remotes import remote
 from apt_ostree.cmd.repo import repo
 from apt_ostree.cmd.status import status
 from apt_ostree.cmd.uninstall import uninstall
@@ -47,6 +48,7 @@ def main():
 cli.add_command(compose)
 cli.add_command(deploy)
 cli.add_command(install)
+cli.add_command(remote)
 cli.add_command(repo)
 cli.add_command(status)
 cli.add_command(uninstall)
