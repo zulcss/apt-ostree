@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 import click
+from rich.console import Console
 
 from apt_ostree.utils import run_command
 
@@ -24,6 +25,20 @@ AT_FDCWD = -100
 class Ostree:
     def __init__(self, state):
         self.state = state
+        self.console = Console()
+
+    def init(self):
+        """Create a new ostree repo."""
+        repo = OSTree.Repo.new(Gio.File.new_for_path(
+            str(self.state.repo)))
+        mode = OSTree.RepoMode.ARCHIVE_Z2
+
+        try:
+            repo.create(mode)
+            self.console.print("Sucessfully initialized ostree repository.")
+        except GLib.GError as e:
+            click.secho(f"Failed to create repo: {e}", fg="red")
+            sys.exit(1)
 
     def ostree_commit(self,
                       root=None,
