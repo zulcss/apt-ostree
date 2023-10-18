@@ -63,7 +63,7 @@ class Bootstrap:
                      self.state.branch), "--target", str(rootfs),
                  "--output", str(workdir)], cwd=self.state.base)
 
-        self.ostree.ostree_init()
+        self.ostree.init()
         click.secho(f"Found ostree branch: {self.state.branch}")
         self.create_ostree(rootfs)
         r = self.ostree.ostree_commit(
