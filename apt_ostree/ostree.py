@@ -5,10 +5,10 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import logging
 import subprocess
 import sys
 
-import click
 from rich.console import Console
 
 from apt_ostree.utils import run_command
@@ -25,6 +25,7 @@ AT_FDCWD = -100
 
 class Ostree:
     def __init__(self, state):
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.console = Console()
 
@@ -38,7 +39,7 @@ class Ostree:
             repo.create(mode)
             self.console.print("Sucessfully initialized ostree repository.")
         except GLib.GError as e:
-            click.secho(f"Failed to create repo: {e}", fg="red")
+            self.logging.error(f"Failed to create repo: {e}")
             sys.exit(1)
 
     def ostree_commit(self,
@@ -64,16 +65,16 @@ class Ostree:
         cmd += [str(root)]
         r = run_command(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if r.returncode != 0:
-            click.secho("Failed to commit to tree.", fg="red")
+            self.logging.error("Failed to commit to tree.")
             sys.exit(1)
-        click.secho(f"Sucessfully commited to {branch}.")
+        self.logging.info(f"Sucessfully commited to {branch}.")
         return r
 
     def get_sysroot(self):
         """Load the /ostree directory (sysroot)."""
         sysroot = OSTree.Sysroot()
         if not sysroot.load():
-            click.secho("Unable to load /sysroot", fg="red")
+            self.logging.error("Unable to load /sysroot.")
             sys.exit(1)
         return sysroot
 
@@ -82,15 +83,15 @@ class Ostree:
         if self.state.repo:
             repo = OSTree.Repo.new(Gio.File.new_for_path(str(self.state.repo)))
             if not repo.open(None):
-                click.secho(
-                    "Opening the archive OSTree repository failed.", fg="red")
+                self.logging.error(
+                    "Opening the archive OSTree repository failed.")
                 sys.exit(1)
         else:
             sysroot = self.get_sysroot()
             _, repo = sysroot.get_repo()
             if not repo.open():
-                click.secho(
-                    "Opening the archive OSTree repository failed.", fg="red")
+                self.logging.error(
+                    "Opening the archive OSTree repository failed.")
                 sys.exit(1)
         return repo
 
@@ -103,7 +104,7 @@ class Ostree:
             try:
                 repo.checkout_at(opts, AT_FDCWD, str(rootfs), rev, None)
             except GLib.GError as e:
-                click.secho(f"Failed to checkout {rev}: {e.message}", fg="red")
+                self.logging.error(f"Failed to checkout {rev}: {e.message}")
                 raise
 
     def ostree_ref(self, branch):
@@ -111,7 +112,7 @@ class Ostree:
         repo = self.open_ostree()
         ret, rev = repo.resolve_rev(branch, True)
         if not rev:
-            click.secho(f"{branch} not found in {self.state.repo}", fg="red")
+            self.logging.error(f"{branch} not found in {self.state.repo}")
             sys.exit(1)
         return rev
 
@@ -143,7 +144,7 @@ class Ostree:
             remotes = repo.remote_list()
             return remotes
         except GLib.GError as e:
-            click.secho(f"Failed to fetch remotes: {e}")
+            self.logging.error(f"Failed to fetch remotes: {e}")
 
     def get_remote_url(self, remote):
         """Fetch the URL of a remote."""
@@ -171,10 +172,10 @@ class Ostree:
                     options,
                     None)
                 if check:
-                    self.console.print(
+                    self.looging.info(
                         f"Successfully added {self.state.remote}.")
             except GLib.GError as e:
-                click.secho(f"Failed to add remote: {e}")
+                self.logging.warning(f"Failed to add remote: {e}")
 
     def remote_remove(self):
         """Delete a remote."""
@@ -182,10 +183,10 @@ class Ostree:
             repo = self.open_ostree()
             check = repo.remote_delete(self.state.remote, None)
             if check:
-                self.console.print(
+                self.logging.info(
                     f"Successfully removed {self.state.remote}.")
         except GLib.GError as e:
-            click.secho(f"Failed to remove remote: {e}")
+            self.logging.error(f"Failed to remove remote: {e}")
 
     def remote_refs(self, remote):
         try:
@@ -193,5 +194,5 @@ class Ostree:
             _, refs = repo.remote_list_refs(remote)
             return refs
         except GLib.GError as e:
-            click.secho(f"Failed to fetch refs: {e}")
+            self.logging.error(f"Failed to fetch refs: {e}")
             sys.exit(1)

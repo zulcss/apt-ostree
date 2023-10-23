@@ -4,23 +4,24 @@ Copyright (c) 2023 Wind River Systems, Inc.
 SPDX-License-Identifier: Apache-2.0
 
 """
+import logging
 import subprocess
 import sys
 import textwrap
 
 import click
-
 from rich.console import Console
 from rich.table import Table
 
 from apt_ostree.deploy import Deploy
-from apt_ostree.log import log_step
 from apt_ostree.ostree import Ostree
 from apt_ostree import utils
 
 
 class Repo:
     def __init__(self, state):
+        self.console = Console()
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.repo = self.state.feed
         self.deploy = Deploy(self.state)
@@ -33,18 +34,18 @@ class Repo:
 
     def init(self):
         """Create a Debian archive from scratch."""
-        log_step("Creating Debian package archive.")
+        self.logging.info("Creating Debian package archive.")
         self.repo = self.repo.joinpath("conf")
         if not self.repo.exists():
-            log_step("Creating package feed directory.")
+            self.logging.info("Creating package feed directory.")
             self.repo.mkdir(parents=True, exist_ok=True)
 
         config = self.repo.joinpath("distributions")
         if config.exists():
-            log_step("Found existing reprepro configuration.")
+            self.logging.info("Found existing reprepro configuration.")
             sys.exit(1)
         else:
-            log_step("Creating reprepro configuration.")
+            self.logging.info("Creating reprepro configuration.")
             config.write_text(
                 textwrap.dedent(f"""\
                  Origin: {self.state.origin}
@@ -66,14 +67,14 @@ class Repo:
     def add(self):
         """Add Debian package(s) to repository."""
         for pkg in self.state.packages:
-            log_step(f"Adding {pkg}.")
+            self.logging.info(f"Adding {pkg}.")
             r = utils.run_command(
                 ["reprepro", "-b", str(self.repo), "includedeb",
                  self.state.release, pkg])
             if r.returncode == 0:
-                log_step(f"Successfully added {pkg}\n")
+                self.logging.info(f"Successfully added {pkg}\n")
             else:
-                log_step(f"Failed to add {pkg}\n")
+                self.logging.error(f"Failed to add {pkg}\n")
 
     def show(self):
         """Display a table of packages in the archive."""
@@ -108,22 +109,22 @@ class Repo:
     def remove(self):
         """Remove a Debian package from an archive."""
         for pkg in self.state.packages:
-            log_step(f"Removing {pkg}.")
+            self.logging.info(f"Removing {pkg}.")
             r = utils.run_command(
                 ["reprepro", "-b", str(self.repo), "remove",
                  self.state.release, pkg],
                 check=True)
             if r.returncode == 0:
-                log_step(f"Successfully removed {pkg}\n")
+                self.logging.info(f"Successfully removed {pkg}\n")
             else:
-                log_step(f"Failed to remove {pkg}\n")
+                self.logging.error(f"Failed to remove {pkg}\n")
 
     def disable_repo(self):
         """Disable Debian feed via apt-add-repository."""
         rootfs = self.deploy.get_sysroot()
         branch = self.ostree.get_branch()
         self.deploy.prestaging(rootfs)
-        self.console.print(
+        self.logging.info(
             "Disablng Debian package feeds.")
         cmd = [
             "apt-add-repository",
@@ -136,14 +137,14 @@ class Repo:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         if r.returncode != 0:
-            click.secho("Failed to disable package feed.", fg="red")
+            self.logging.error("Failed to disable package feed.")
             sys.exit(1)
-        self.console.print(
+        self.logging.info(
             f"Successfully disabled  \"{self.state.sources}\".",
             highlight=False)
         self.deploy.poststaging(rootfs)
 
-        self.console.print(f"Committing to {branch} to repo.")
+        self.logging.info(f"Committing to {branch} to repo.")
         r = self.ostree.ostree_commit(
             root=str(rootfs),
             branch=branch,
@@ -152,7 +153,7 @@ class Repo:
             msg=f"Disabled {self.state.sources}",
         )
         if r.returncode != 0:
-            click.secho("Failed to commit to repository", fg="red")
+            self.logging.error("Failed to commit to repository.")
         self.deploy.cleanup(str(rootfs))
 
     def add_repo(self):
@@ -160,7 +161,7 @@ class Repo:
         rootfs = self.deploy.get_sysroot()
         branch = self.ostree.get_branch()
         self.deploy.prestaging(rootfs)
-        self.console.print(
+        self.logging.info(
             "Enabling addtional Debian package feeds.")
         cmd = [
             "apt-add-repository",
@@ -173,13 +174,13 @@ class Repo:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         if r.returncode != 0:
-            click.secho("Failed to add package feed.", fg="red")
+            self.logging.error("Failed to add package feed.")
             sys.exit(1)
-        self.console.print(
+        self.logging.info(
             f"Successfully added \"{self.state.sources}\".", highlight=False)
         self.deploy.poststaging(rootfs)
 
-        self.console.print(f"Committing to {branch} to repo.")
+        self.logging.info(f"Committing to {branch} to repo.")
         r = self.ostree.ostree_commit(
             root=str(rootfs),
             branch=branch,
@@ -188,5 +189,5 @@ class Repo:
             msg=f"Enabled {self.state.sources}",
         )
         if r.returncode != 0:
-            click.secho("Failed to commit to repository", fg="red")
+            self.logging.error("Failed to commit to repository")
         self.deploy.cleanup(str(rootfs))

@@ -4,11 +4,11 @@ Copyright (c) 2023 Wind River Systems, Inc.
 SPDX-License-Identifier: Apache-2.0
 
 """
+import logging
 import shutil
 import sys
 
 
-import click
 from rich.console import Console
 
 from apt_ostree.ostree import Ostree
@@ -17,6 +17,7 @@ from apt_ostree.repo import Repo
 
 class Compose:
     def __init__(self, state):
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.ostree = Ostree(self.state)
         self.repo = Repo(self.state)
@@ -30,11 +31,11 @@ class Compose:
     def create(self):
         """Create an OSTree repository."""
         if self.state.repo.exists():
-            click.secho(
-                f"Repository already exists: {self.state.repo}", fg="red")
+            self.logging.error(
+                f"Repository already exists: {self.state.repo}")
             sys.exit(1)
 
-        click.secho(f"Found ostree repository: {self.state.repo}")
+        self.logging.info(f"Found ostree repository: {self.state.repo}")
         self.ostree.init()
 
     def enablerepo(self):
@@ -42,7 +43,7 @@ class Compose:
         try:
             self.repo.add_repo()
         except Exception as e:
-            click.secho(f"Failed to add repo: {e}", fg="red")
+            self.logging.error(f"Failed to add repo: {e}")
             sys.exit(1)
 
     def disablerepo(self):
@@ -50,11 +51,10 @@ class Compose:
 
     def commit(self, parent):
         """Commit changes to an ostree repo."""
-        self.console.print(f"Cloning {self.state.branch} from {parent}.",
-                           highlight=False)
+        self.logging.info(f"Cloning {self.state.branch} from {parent}.")
         rev = self._checkout(parent)
         if not rev:
-            click.secho("Failed to fetch commit", fg="red")
+            self.logging.error("Failed to fetch commit")
             sys.exit(1)
 
         with self.console.status(f"Commiting {rev[:10]}."):
@@ -67,18 +67,16 @@ class Compose:
                 msg=f"Forked from {parent} ({rev[:10]})."
             )
             if r.returncode != 0:
-                click.secho("Failed to commit.", fg="red")
+                self.logging.error("Failed to commit.")
                 sys.exit(1)
 
-        self.console.print(f"Successfully commited {self.state.branch}"
-                           f"({rev[:10]}) from {parent}.",
-                           highlight=False)
-        self.console.print("Cleaning up.")
+        self.logging.info(f"Successfully commited {self.state.branch}"
+                          f"({rev[:10]}) from {parent}.")
+        self.logging.info("Cleaning up.")
         try:
             shutil.rmtree(self.rootfs)
         except OSError as e:
-            click.secho(f"Failed to remove rootfs {self.rootfs}: {e}",
-                        fg="red")
+            self.logging.error(f"Failed to remove rootfs {self.rootfs}: {e}")
 
     def _checkout(self, branch):
         """Checkout a commit from an ostree branch."""

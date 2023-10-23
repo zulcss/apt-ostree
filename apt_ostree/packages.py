@@ -4,9 +4,10 @@ Copyright (c) 2023 Wind River Systems, Inc.
 SPDX-License-Identifier: Apache-2.0
 
 """
+
+import logging
 import sys
 
-import click
 from rich.console import Console
 
 from apt_ostree.apt import Apt
@@ -16,10 +17,11 @@ from apt_ostree.ostree import Ostree
 
 class Packages:
     def __init__(self, state):
+        self.console = Console()
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.apt = Apt(self.state)
         self.ostree = Ostree(self.state)
-        self.console = Console()
         self.deploy = Deploy(self.state)
 
     def install(self, packages):
@@ -31,7 +33,7 @@ class Packages:
         branch = self.ostree.get_branch()
         rootfs = self.deploy.get_sysroot()
         if not rootfs.exists():
-            click.secho("Unable to determine rootfs: {rootfs}", fg="red")
+            self.logging.error("Unable to determine rootfs: {rootfs}")
             sys.exit(1)
 
         # Step 0 - Run the prestaging steps.
@@ -44,7 +46,7 @@ class Packages:
         # Step 2 - Check to see if the packages are valid.
         packages = self.apt.check_valid_packages(cache, packages)
         if len(packages) == 0:
-            click.secho("No valid packages found.", fg="red")
+            self.logging.error("No valid packages found.")
             sys.exit(1)
 
         # Step 3 - Generate the commit message.
@@ -70,8 +72,7 @@ class Packages:
         self.deploy.poststaging(rootfs)
 
         # Step 6 - Ostree commit.
-        self.console.print(f"Commiting to {branch}",
-                           highlight=False)
+        self.logging.info(f"Commiting to {branch}")
         self.ostree.ostree_commit(
             root=str(rootfs),
             branch=self.ostree.get_branch(),
@@ -87,7 +88,7 @@ class Packages:
         """Use apt to install Debian packages."""
         rootfs = self.deploy.get_sysroot()
         if not rootfs.exists():
-            click.secho("Unable to determine rootfs: {rootfs}", fg="red")
+            self.logging.error("Unable to determine rootfs: {rootfs}")
             sys.exit(1)
 
         # Step 0 - Setup prestaging.
@@ -108,7 +109,7 @@ class Packages:
         cache.upgrade(False)
         packages = [package.name for package in cache.get_changes()]
         if len(packages) == 0:
-            click.secho("No package to upgrade.", fg="red")
+            self.logging.error("No package to upgrade.")
             sys.exit(1)
 
         # Step 3 - Build the commit message
@@ -150,7 +151,7 @@ class Packages:
         """Use apt to uninstall Debian packages."""
         rootfs = self.deploy.get_sysroot()
         if not rootfs.exists():
-            click.secho("Unable to determine rootfs: {rootfs}", fg="red")
+            self.logging.error("Unable to determine rootfs: {rootfs}")
             sys.exit(1)
 
         # Step 0 - Run the prestaging steps.

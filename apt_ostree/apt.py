@@ -5,26 +5,25 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import logging
 import subprocess
 import sys
 
 import apt
-import click
-from rich.console import Console
 
 from apt_ostree.utils import run_sandbox_command
 
 
 class Apt:
     def __init__(self, state):
+        self.logging = logging.getLevelName(__name__)
         self.state = state
-        self.console = Console()
 
     def cache(self, rootfs):
         try:
             cache = apt.Cache(rootdir=rootfs)
         except AttributeError as e:
-            click.secho(f"Failed to load apt cache: {e.message}")
+            self.logging.error(f"Failed to load apt cache: {e.message}")
             sys.exit(1)
         return cache
 
@@ -38,7 +37,7 @@ class Apt:
             ["apt-get", "update", "-y"],
             rootfs)
         if r.returncode != 0:
-            click.secho("Failed to run apt-get update", fg="red")
+            self.logging.error("Failed to run apt-get update.")
         return r
 
     def apt_install(self, packages, rootfs):
@@ -48,7 +47,7 @@ class Apt:
             cmd += packages
         r = run_sandbox_command(cmd, rootfs)
         if r.returncode != 0:
-            click.secho("Failed to run apt-get install", fg="red")
+            self.logging.error("Failed to run apt-get install.")
         return r
 
     def apt_list(self, rootfs, action):
@@ -65,7 +64,7 @@ class Apt:
             ["apt-get", "upgrade"],
             rootfs)
         if r.returncode != 0:
-            click.secho("Failed to run apt-get upgrade", fg="red")
+            self.logging.error("Failed to run apt-get upgrade.")
         return r
 
     def apt_uninstall(self, packages, rootfs):
@@ -75,7 +74,7 @@ class Apt:
             cmd += packages
         r = run_sandbox_command(cmd, rootfs)
         if r.returncode != 0:
-            click.secho("Failed to run apt-get remove", fg="red")
+            self.logging.error("Failed to run apt-get remove.")
         return r
 
     def check_valid_packages(self, cache, packages):

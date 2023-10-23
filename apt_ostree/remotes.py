@@ -5,6 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import logging
+
 from rich.console import Console
 from rich.table import Table
 
@@ -13,9 +15,10 @@ from apt_ostree.ostree import Ostree
 
 class Remotes:
     def __init__(self, state):
+        self.console = Console()
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.ostree = Ostree(self.state)
-        self.console = Console()
 
     def remotes(self, refs):
         """Dispaly remotes or refs at remotes."""
@@ -35,8 +38,8 @@ class Remotes:
         table.add_column("Checksum", justify="center")
 
         url = self.ostree.get_remote_url(self.state.remote)
-        self.console.print(
-            f"\nRemote: {self.state.remote} ({url})\n", highlight=False)
+        self.logging.info(
+            f"\nRemote: {self.state.remote} ({url})\n")
         for remote, csum in refs.items():
             table.add_row(remote, csum)
 

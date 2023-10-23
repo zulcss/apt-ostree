@@ -6,65 +6,67 @@ SPDX-License-Identifier: Apache-2.0
 """
 
 import hashlib
+import logging
 import os
 import shutil
 import sys
 
 import apt
-import click
+from rich.console import Console
 
 from apt_ostree.constants import excluded_packages
-from apt_ostree.log import complete_step
-from apt_ostree.log import log_step
 from apt_ostree.ostree import Ostree
 from apt_ostree.utils import run_command
 
 
 class Bootstrap:
     def __init__(self, state):
+        self.logging = logging.getLogger(__name__)
+        self.console = Console()
         self.state = state
         self.ostree = Ostree(self.state)
 
     def create_rootfs(self):
         """Create a Debian system from a configuration file."""
         if not self.state.base.exists():
-            click.secho("Configuration directory does not exist.", fg="red")
+            self.logging.error("Configuration directory does not exist.")
             sys.exit(1)
-        click.secho(f"Found configuration directory: {self.state.base}")
+        self.logging.info(f"Found configuration directory: {self.state.base}")
 
         config = self.state.base.joinpath("bootstrap.yaml")
         if not config.exists():
-            click.sceho("bootstrap.yaml does not exist.", fg="red")
+            self.logging.error("bootstrap.yaml does not exist.")
             sys.exit(1)
         else:
-            click.secho("Found configuration file bootstrap.yaml.")
+            self.loging.info("Found configuration file bootstrap.yaml.")
 
-        with complete_step(f"Setting up workspace for {self.state.branch}."):
+        with self.console.status(
+                f"Setting up workspace for {self.state.branch}."):
             workspace = self.state.workspace
             workdir = workspace.joinpath(f"build/{self.state.branch}")
             rootfs = workdir.joinpath("rootfs")
 
-            log_step(f"Building workspace for {self.state.branch} "
-                     f"in {workspace}")
+            self.logging.info(f"Building workspace for {self.state.branch} "
+                              f"in {workspace}")
             if workdir.exists():
-                log_step("Found working directory from "
-                         "previous run...removing.")
+                self.logging.info("Found working directory from "
+                                  "previous run...removing.")
                 shutil.rmtree(workdir)
             workdir.mkdir(parents=True, exist_ok=True)
             rootfs.mkdir(parents=True, exist_ok=True)
 
-            log_step("Running bdebstrap, please wait.")
-            verbosity = "-q"
-            if self.state.debug:
-                verbosity = "-v"
-            run_command(
-                ["bdebstrap", "-c", "bootstrap.yaml", verbosity,
-                 "--force", "--name", str(
-                     self.state.branch), "--target", str(rootfs),
-                 "--output", str(workdir)], cwd=self.state.base)
+        self.logging.info("Running bdebstrap, please wait.")
+        verbosity = "-q"
+        if self.state.debug:
+            verbosity = "-v"
+        run_command(
+            ["bdebstrap", "-c", "bootstrap.yaml", verbosity,
+             "--force", "--name", str(self.state.branch),
+             "--target", str(rootfs),
+             "--output", str(workdir)], cwd=self.state.base)
 
         self.ostree.init()
-        click.secho(f"Found ostree branch: {self.state.branch}")
+        self.logging.info(f"Found ostree branch: {self.state.branch}")
         self.create_ostree(rootfs)
         r = self.ostree.ostree_commit(
             rootfs,
@@ -73,14 +75,14 @@ class Bootstrap:
             subject="Commit by apt-ostree",
             msg="Initialized by apt-ostree.")
         if r.returncode != 0:
-            click.secho(f"Failed to commit {self.state.branch} to "
-                        f"{self.state.repo}.")
-        click.secho(f"Commited {self.state.repo} to {self.state.repo}.")
+            self.logging.info(f"Failed to commit {self.state.branch} to "
+                              f"{self.state.repo}.")
+        self.logging.info(f"Commited {self.state.repo} to {self.state.repo}.")
 
     def create_ostree(self, rootdir):
         """Create an ostree branch from a rootfs."""
-        with complete_step(f"Creating ostree from {rootdir}."):
-            log_step("Setting up /usr/lib/ostree-boot")
+        with self.console.status(f"Creating ostree from {rootdir}."):
+            self.logging.info("Setting up /usr/lib/ostree-boot")
             self.setup_boot(rootdir,
                             rootdir.joinpath("boot"),
                             rootdir.joinpath("usr/lib/ostree-boot"))
@@ -94,17 +96,17 @@ class Bootstrap:
                  "vmlinuz", "vmlinuz.old"]
         assert rootdir is not None and rootdir != ""
 
-        with complete_step(f"Converting {rootdir} to ostree."):
+        with self.console.status(f"Converting {rootdir} to ostree."):
             dir_perm = 0o755
 
             # Emptying /dev
-            log_step("Emptying /dev.")
+            self.logging.info("Emptying /dev.")
             shutil.rmtree(rootdir.joinpath("dev"))
             os.mkdir(rootdir.joinpath("dev"), dir_perm)
 
             # Copying /var
             self.sanitize_usr_symlinks(rootdir)
-            log_step("Moving /var to /usr/rootdirs.")
+            self.logging.info("Moving /var to /usr/rootdirs.")
             os.mkdir(rootdir.joinpath("usr/rootdirs"), dir_perm)
             # Make sure we preserve file permissions otherwise
             # bubblewrap will complain that a file/directory
@@ -118,7 +120,7 @@ class Bootstrap:
             os.mkdir(rootdir.joinpath("var"), dir_perm)
 
             # Remove unecessary files
-            log_step("Removing unnecessary files.")
+            self.logging.info("Removing unnecessary files.")
             for c in CRUFT:
                 try:
                     os.remove(rootdir.joinpath(c))
@@ -126,11 +128,11 @@ class Bootstrap:
                     pass
 
             # Setup and split out etc
-            log_step("Moving /etc to /usr/etc.")
+            self.logging.info("Moving /etc to /usr/etc.")
             shutil.move(rootdir.joinpath("etc"),
                         rootdir.joinpath("usr"))
 
-            log_step("Setting up /ostree and /sysroot.")
+            self.logging.info("Setting up /ostree and /sysroot.")
             try:
                 rootdir.joinpath("ostree").mkdir(
                     parents=True, exist_ok=True)
@@ -139,7 +141,7 @@ class Bootstrap:
             except OSError:
                 pass
 
-            log_step("Setting up symlinks.")
+            self.logging.info("Setting up symlinks.")
             TOPLEVEL_LINKS = {
                 "media": "run/media",
                 "mnt": "var/mnt",
@@ -240,7 +242,7 @@ class Bootstrap:
 
     def create_tmpfile_dir(self, rootdir):
         """Ensure directoeies in /var are created."""
-        with complete_step("Creating systemd-tmpfiles configuration"):
+        with self.console.status("Creating systemd-tmpfiles configuration"):
             cache = apt.cache.Cache(rootdir=rootdir)
             dirs = []
             for pkg in cache:

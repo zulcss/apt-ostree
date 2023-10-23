@@ -5,24 +5,26 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import logging
 import shutil
 
-import click
+from rich.console import Console
 
-from apt_ostree.log import complete_step
-from apt_ostree.log import log_step
 from apt_ostree.utils import run_command
 
 
 class Image:
     def __init__(self, state):
+        self.logging = logging.getLogger(__name__)
+        self.console = Console()
         self.state = state
 
     def create_image(self):
         """Create a raw disk image from an ostree repository."""
-        click.secho(f"Found ostree repository: {self.state.repo}")
-        click.secho(f"Found ostree branch: {self.state.branch}")
-        with complete_step(f"Setting up workspace for {self.state.branch}"):
+        self.logging.info(f"Found ostree repository: {self.state.repo}")
+        self.logging.info(f"Found ostree branch: {self.state.branch}")
+        with self.console.status(
+                f"Setting up workspace for {self.state.branch}."):
             workdir = self.state.workspace.joinpath(
                 f"build/{self.state.branch}")
             img_dir = workdir.joinpath("image")
@@ -33,25 +35,26 @@ class Image:
                 self.state.base.joinpath("image"),
                 img_dir, dirs_exist_ok=True)
 
-        with complete_step("Creating local ostree repository"):
-            log_step("Creating image build repository")
-            run_command(
-                ["ostree", "init", f"--repo={str(ostree_repo)}"],
-                cwd=img_dir)
-            log_step(f"Pulling {self.state.branch} in image build repository")
-            run_command(
-                ["ostree", "pull-local", f"--repo={str(ostree_repo)}",
-                 str(self.state.repo), str(self.state.branch)],
-                cwd=img_dir)
-            log_step("Running debos...")
+        self.logging.info("Creating image build repository")
+        run_command(
+            ["ostree", "init", f"--repo={str(ostree_repo)}"],
+            cwd=img_dir)
+        self.logging.info(
+            f"Pulling {self.state.branch} in image build repository")
+        run_command(
+            ["ostree", "pull-local", f"--repo={str(ostree_repo)}",
+             str(self.state.repo), str(self.state.branch)],
+            cwd=img_dir)
+        self.logging.info("Running debos...")
 
-            cmd = ["debos",
-                   "-t", f"branch:{self.state.branch}",
-                   ]
-            if self.state.debug:
-                cmd += ["-v"]
-            cmd += ["image.yaml"]
+        cmd = [
+            "debos",
+            "-t", f"branch:{self.state.branch}",
+        ]
+        if self.state.debug:
+            cmd += ["-v"]
+        cmd += ["image.yaml"]
 
-            run_command(cmd, cwd=img_dir)
+        run_command(cmd, cwd=img_dir)
 
-        click.secho(f"Image can be found in {img_dir}")
+        self.logging.info(f"Image can be found in {img_dir}")

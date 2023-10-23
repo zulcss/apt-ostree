@@ -5,12 +5,12 @@ SPDX-License-Identifier: Apache-2.0
 
 """
 
+import logging
 import os
 import shutil
 import subprocess
 import sys
 
-import click
 from rich.console import Console
 
 from apt_ostree.ostree import Ostree
@@ -19,9 +19,10 @@ from apt_ostree import utils
 
 class Deploy:
     def __init__(self, state):
+        self.console = Console()
+        self.logging = logging.getLogger(__name__)
         self.state = state
         self.ostree = Ostree(self.state)
-        self.console = Console()
 
         self.workspace = self.state.workspace
         self.workdir = self.state.workspace.joinpath("deployment")
@@ -31,7 +32,7 @@ class Deploy:
     def prestaging(self, rootfs):
         """Pre stage steps."""
         if not rootfs.exists():
-            click.secho("rootfs not found: {rootfs}", fg="red")
+            self.logging.error("rootfs not found: {rootfs}")
             sys.exit(1)
 
         with self.console.status("Running prestaging steps."):
@@ -60,17 +61,17 @@ class Deploy:
                 # 73 - configuration ok, but could not be created
                 #  1 - other error
                 if r.returncode not in [0, 65]:
-                    click.secho("Failed to populate /var,", fg="red")
-                    click.secho(f"Error code: {r.returncode}", fg="red")
+                    self.logging.error("Failed to populate /var,")
+                    self.logging.error(f"Error code: {r.returncode}")
                     sys.exit(1)
 
     def poststaging(self, rootfs):
         """Post staging steps."""
         if not rootfs.exists():
-            click.secho("rootfs not found: {rootfs}", fg="red")
+            self.logging.error("rootfs not found: {rootfs}")
             sys.exit(1)
 
-        self.console.print("Running post deploy steps.")
+        self.logging.info("Running post deploy steps.")
         fd = os.open(rootfs, os.O_DIRECTORY)
         if os.path.exists(rootfs.joinpath("etc")):
             os.unlink("etc", dir_fd=fd)
@@ -105,33 +106,33 @@ class Deploy:
         """Run ostree admin deploy."""
         ref = self.ostree.ostree_ref(self.state.branch)
         if not ref:
-            click.secho(
-                f"Unable to find branch: {self.state.branch}.", fg="red")
+            self.logging.error(
+                f"Unable to find branch: {self.state.branch}.")
             sys.exit(1)
 
         r = utils.run_command(
             ["ostree", "admin", "deploy", self.state.branch]
         )
         if r.returncode != 0:
-            click.secho("Failed to deploy.", fg="red")
+            self.logging.error("Failed to deploy.")
             sys.exit(1)
 
         if update:
-            self.console.print("Updating grub.")
+            self.logging.info("Updating grub.")
             r = utils.run_command(
                 ["update-grub"]
             )
             if r.returncode != 0:
-                click.secho("Failed to update grub.", fg="red")
+                self.logging.error("Failed to update grub.")
                 sys.exit(1)
 
         if reboot:
-            self.console.print("Rebooting now.")
+            self.logging.info("Rebooting now.")
             r = utils.run_command(
                 ["shutdown", "-r", "now"]
             )
             if r.returncode != 0:
-                click.secho("Failed to reboot.", fg="red")
+                self.logging.error("Failed to reboot.")
                 sys.exit(1)
         else:
-            self.console.print("Please reboot for the changes to take affect.")
+            self.logging.info("Please reboot for the changes to take affect.")
