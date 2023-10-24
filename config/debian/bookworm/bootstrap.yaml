@@ -64,3 +64,4 @@ mmdebstrap:
     - gir1.2-ostree-1.0
     - software-properties-common
     - libnss-systemd
+    - python3-systemd

@@ -38,7 +38,7 @@ class Bootstrap:
             self.logging.error("bootstrap.yaml does not exist.")
             sys.exit(1)
         else:
-            self.loging.info("Found configuration file bootstrap.yaml.")
+            self.logging.info("Found configuration file bootstrap.yaml.")
 
         with self.console.status(
                 f"Setting up workspace for {self.state.branch}."):
@@ -96,65 +96,65 @@ class Bootstrap:
                  "vmlinuz", "vmlinuz.old"]
         assert rootdir is not None and rootdir != ""
 
-        with self.console.status(f"Converting {rootdir} to ostree."):
-            dir_perm = 0o755
+        self.logging.info(f"Converting {rootdir} to ostree.")
+        dir_perm = 0o755
 
-            # Emptying /dev
-            self.logging.info("Emptying /dev.")
-            shutil.rmtree(rootdir.joinpath("dev"))
-            os.mkdir(rootdir.joinpath("dev"), dir_perm)
+        # Emptying /dev
+        self.logging.info("Emptying /dev.")
+        shutil.rmtree(rootdir.joinpath("dev"))
+        os.mkdir(rootdir.joinpath("dev"), dir_perm)
 
-            # Copying /var
-            self.sanitize_usr_symlinks(rootdir)
-            self.logging.info("Moving /var to /usr/rootdirs.")
-            os.mkdir(rootdir.joinpath("usr/rootdirs"), dir_perm)
-            # Make sure we preserve file permissions otherwise
-            # bubblewrap will complain that a file/directory
-            # permisisons/onership is not mapped correctly.
-            shutil.copytree(
-                rootdir.joinpath("var"),
-                rootdir.joinpath("usr/rootdirs/var"),
-                symlinks=True
-            )
-            shutil.rmtree(rootdir.joinpath("var"))
-            os.mkdir(rootdir.joinpath("var"), dir_perm)
+        # Copying /var
+        self.sanitize_usr_symlinks(rootdir)
+        self.logging.info("Moving /var to /usr/rootdirs.")
+        os.mkdir(rootdir.joinpath("usr/rootdirs"), dir_perm)
+        # Make sure we preserve file permissions otherwise
+        # bubblewrap will complain that a file/directory
+        # permisisons/onership is not mapped correctly.
+        shutil.copytree(
+          rootdir.joinpath("var"),
+          rootdir.joinpath("usr/rootdirs/var"),
+          symlinks=True
+        )
+        shutil.rmtree(rootdir.joinpath("var"))
+        os.mkdir(rootdir.joinpath("var"), dir_perm)
 
-            # Remove unecessary files
-            self.logging.info("Removing unnecessary files.")
-            for c in CRUFT:
-                try:
-                    os.remove(rootdir.joinpath(c))
-                except OSError:
-                    pass
-
-            # Setup and split out etc
-            self.logging.info("Moving /etc to /usr/etc.")
-            shutil.move(rootdir.joinpath("etc"),
-                        rootdir.joinpath("usr"))
-
-            self.logging.info("Setting up /ostree and /sysroot.")
+        # Remove unecessary files
+        self.logging.info("Removing unnecessary files.")
+        for c in CRUFT:
             try:
-                rootdir.joinpath("ostree").mkdir(
-                    parents=True, exist_ok=True)
-                rootdir.joinpath("sysroot").mkdir(
-                    parents=True, exist_ok=True)
+              os.remove(rootdir.joinpath(c))
             except OSError:
-                pass
+              pass
 
-            self.logging.info("Setting up symlinks.")
-            TOPLEVEL_LINKS = {
-                "media": "run/media",
-                "mnt": "var/mnt",
-                "opt": "var/opt",
-                "ostree": "sysroot/ostree",
-                "root": "var/roothome",
-                "srv": "var/srv",
-                "usr/local": "../var/usrlocal",
-            }
-            fd = os.open(rootdir, os.O_DIRECTORY)
-            for l, t in TOPLEVEL_LINKS.items():
-                shutil.rmtree(rootdir.joinpath(l))
-                os.symlink(t, l, dir_fd=fd)
+        # Setup and split out etc
+        self.logging.info("Moving /etc to /usr/etc.")
+        shutil.move(rootdir.joinpath("etc"),
+                    rootdir.joinpath("usr"))
+
+        self.logging.info("Setting up /ostree and /sysroot.")
+        try:
+           rootdir.joinpath("ostree").mkdir(
+                parents=True, exist_ok=True)
+           rootdir.joinpath("sysroot").mkdir(
+                 parents=True, exist_ok=True)
+        except OSError:
+             pass
+
+        self.logging.info("Setting up symlinks.")
+        TOPLEVEL_LINKS = {
+            "media": "run/media",
+            "mnt": "var/mnt",
+            "opt": "var/opt",
+            "ostree": "sysroot/ostree",
+            "root": "var/roothome",
+            "srv": "var/srv",
+            "usr/local": "../var/usrlocal",
+        }
+        fd = os.open(rootdir, os.O_DIRECTORY)
+        for l, t in TOPLEVEL_LINKS.items():
+            shutil.rmtree(rootdir.joinpath(l))
+            os.symlink(t, l, dir_fd=fd)
 
     def sanitize_usr_symlinks(self, rootdir):
         """Replace symlinks from /usr pointing to /var"""
@@ -242,28 +242,28 @@ class Bootstrap:
 
     def create_tmpfile_dir(self, rootdir):
         """Ensure directoeies in /var are created."""
-        with self.console.status("Creating systemd-tmpfiles configuration"):
-            cache = apt.cache.Cache(rootdir=rootdir)
-            dirs = []
-            for pkg in cache:
-                if "/var" in pkg.installed_files and \
-                        pkg.name not in excluded_packages:
-                    dirs += [file for file in pkg.installed_files
-                             if file.startswith("/var")]
-            if len(dirs) == 0:
+        self.logging.info("Creating systemd-tmpfiles configuration")
+        cache = apt.cache.Cache(rootdir=rootdir)
+        dirs = []
+        for pkg in cache:
+           if "/var" in pkg.installed_files and \
+              pkg.name not in excluded_packages:
+              dirs += [file for file in pkg.installed_files
+                       if file.startswith("/var")]
+           if len(dirs) == 0:
                 return
-            conf = rootdir.joinpath(
-                "usr/lib/tmpfiles.d/ostree-integration-autovar.conf")
-            if conf.exists():
-                os.unlink(conf)
-            with open(conf, "w") as f:
-                f.write("# Auto-genernated by apt-ostree\n")
-                for d in (dirs):
-                    if d not in [
-                            "/var",
-                            "/var/lock",
-                            "/var/cache",
-                            "/var/spool",
-                            "/var/log",
-                            "/var/lib"]:
-                        f.write(f"L {d} - - - - ../../usr/rootdirs{d}\n")
+           conf = rootdir.joinpath(
+               "usr/lib/tmpfiles.d/ostree-integration-autovar.conf")
+           if conf.exists():
+               os.unlink(conf)
+           with open(conf, "w") as f:
+               f.write("# Auto-genernated by apt-ostree\n")
+               for d in (dirs):
+                   if d not in [
+                        "/var",
+                        "/var/lock",
+                        "/var/cache",
+                        "/var/spool",
+                        "/var/log",
+                        "/var/lib"]:
+                     f.write(f"L {d} - - - - ../../usr/rootdirs{d}\n")
