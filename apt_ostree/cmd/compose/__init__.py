@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 import click
 
 from apt_ostree.cmd.compose.backup import backup
+from apt_ostree.cmd.compose.checkout import checkout
 from apt_ostree.cmd.compose.commit import commit
 from apt_ostree.cmd.compose.create import create
 from apt_ostree.cmd.compose.image import image
@@ -27,6 +28,7 @@ def compose(ctxt):
 
 
 compose.add_command(backup)
+compose.add_command(checkout)
 compose.add_command(commit)
 compose.add_command(create)
 compose.add_command(image)

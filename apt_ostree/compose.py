@@ -12,6 +12,7 @@ import sys
 
 from rich.console import Console
 
+from apt_ostree.deploy import Deploy
 from apt_ostree.ostree import Ostree
 from apt_ostree.repo import Repo
 
@@ -22,6 +23,7 @@ class Compose:
         self.state = state
         self.ostree = Ostree(self.state)
         self.repo = Repo(self.state)
+        self.deploy = Deploy(self.state)
         self.console = Console()
 
         self.workspace = self.state.workspace
@@ -76,6 +78,15 @@ class Compose:
     def disablerepo(self):
         self.repo.disable_repo()
 
+    def checkout(self, rootfs):
+        rootfs = pathlib.Path(rootfs)
+        if rootfs.exists():
+            self.logging.error(f"Directory already exists: {rootfs}")
+            sys.exit(1)
+
+        self._checkout(rootfs, self.state.branch)
+        self.deploy.prestaging(rootfs)
+
     def commit(self, parent):
         """Commit changes to an ostree repo."""
         self.logging.info(f"Cloning {self.state.branch} from {parent}.")
@@ -83,7 +94,6 @@ class Compose:
         if not rev:
             self.logging.error("Failed to fetch commit")
             sys.exit(1)
-
         with self.console.status(f"Commiting {rev[:10]}."):
             r = self.ostree.ostree_commit(
                 root=self.rootfs,
@@ -105,14 +115,21 @@ class Compose:
         except OSError as e:
             self.logging.error(f"Failed to remove rootfs {self.rootfs}: {e}")
 
-    def _checkout(self, branch):
+    def _checkout(self, rootfs=None, branch=None):
         """Checkout a commit from an ostree branch."""
-        rev = self.ostree.ostree_ref(branch)
+        if branch is not None:
+            rev = self.ostree.ostree_ref(branch)
+
         with self.console.status(f"Checking out {rev[:10]}..."):
             self.workdir = self.workdir.joinpath(branch)
-            self.workdir.mkdir(parents=True, exist_ok=True)
-            self.rootfs = self.workdir.joinpath(rev)
-            if self.rootfs.exists():
-                shutil.rmtree(self.rootfs)
+            if rootfs:
+                if rootfs.exists():
+                    shutil.rmtree(rootfs)
+                self.rootfs = rootfs
+            else:
+                self.workdir.mkdir(parents=True, exist_ok=True)
+                self.rootfs = self.workdir.joinpath(rev)
+                if self.rootfs.exists():
+                    shutil.rmtree(self.rootfs)
             self.ostree.ostree_checkout(branch, self.rootfs)
         return rev
