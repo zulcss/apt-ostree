@@ -6,6 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 """
 
 import logging
+import os
 import subprocess
 import sys
 
@@ -33,30 +34,43 @@ class Apt:
 
     def apt_update(self, rootfs):
         """Run apt-get update."""
+        self.logging.info("Running apt-update")
         r = run_sandbox_command(
             ["apt-get", "update", "-y"],
-            rootfs)
+            rootfs,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
         if r.returncode != 0:
             self.logging.error("Failed to run apt-get update.")
         return r
 
-    def apt_install(self, packages, rootfs):
+    def apt_install(self, cache, packages, rootfs):
         """Run apt-get install."""
-        cmd = ["apt-get", "install"]
-        if packages:
-            cmd += packages
-        r = run_sandbox_command(cmd, rootfs)
-        if r.returncode != 0:
-            self.logging.error("Failed to run apt-get install.")
+        env = os.environ.copy()
+        env["DEBIAN_FRONTEND"] = "noninteractive"
+        for package in packages:
+            version = self.get_version(cache, package)
+            pkg = self.apt_package(cache, package)
+            if not pkg.is_installed:
+                self.logging.info(f"Installing {package} ({version}).")
+            else:
+                self.logging.info(
+                    f"Skipping {package} ({version}), already installed.")
+            cmd = ["apt-get", "-y", "install", package]
+            r = run_sandbox_command(cmd, rootfs, env=env,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            if r.returncode != 0:
+                self.logging.error("Failed to run apt-get install")
         return r
 
     def apt_list(self, rootfs, action):
         """Show package versions."""
         return run_sandbox_command(
-                ["apt", "list", action],
-                rootfs,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL)
+            ["apt", "list", action],
+            rootfs,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL)
 
     def apt_upgrade(self, rootfs):
         """Run apt-get upgrade."""
@@ -89,6 +103,14 @@ class Apt:
 
     def get_version(self, cache, package):
         return self.apt_package(cache, package).candidate.version
+
+    def get_installed_packages(self, cache):
+        """Get a list of installed packages."""
+        pkgs = set()
+        for pkg in cache:
+            if pkg.is_installed:
+                pkgs.add(pkg.name)
+        return pkgs
 
     def get_dependencies(self, cache, packages, deps, predeps, all_deps):
         """Get installed versions."""

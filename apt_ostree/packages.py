@@ -66,7 +66,7 @@ class Packages:
                 commit += f"- {dep} ({version})\n"
 
         # Step 4 - Install the valid packages.
-        self.apt.apt_install(packages, rootfs)
+        self.apt.apt_install(cache, packages, rootfs)
 
         # Step 5 - Run post staging steps.
         self.deploy.poststaging(rootfs)

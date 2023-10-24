@@ -103,6 +103,42 @@ class Ostree:
                 sys.exit(1)
         return repo
 
+    def fetch(self, remote, branch, progress=None):
+        """Fetch an object from a remote repository."""
+        cancellable = None
+        progress = OSTree.AsyncProgress.new()
+        progress.connect('changed', self._progress_cb)
+
+        repo = self.open_ostree()
+
+        # Pull Options
+        pull_options = {
+            'depth': GLib.Variant('i', -1),
+            'refs': GLib.Variant('as', (branch,)),
+        }
+        try:
+            repo.pull_with_options(remote,
+                                   GLib.Variant('a{sv}', pull_options),
+                                   progress, cancellable)
+        except GLib.GError as e:
+            self.logging.error(f"Fetch failed: {e.message}")
+            sys.exit(1)
+
+    def _progress_cb(self, async_progress):
+        """Show whats happening."""
+        status = async_progress.get_status()
+        outstanding_fetches = async_progress.get_uint('outstanding-fetches')
+        if status:
+            print(f'OUTPUT:Status: {status}')
+        elif outstanding_fetches > 0:
+            fetched = async_progress.get_uint('fetched')
+            requested = async_progress.get_uint('requested')
+            if requested == 0:
+                percent = 0.0
+            else:
+                percent = fetched / requested
+            print(f'PROGRESS:{percent}')
+
     def ostree_checkout(self, branch, rootfs):
         """Checkout a branch from an ostree repository."""
         repo = self.open_ostree()
@@ -119,9 +155,6 @@ class Ostree:
         """Find the commit id for a given reference."""
         repo = self.open_ostree()
         ret, rev = repo.resolve_rev(branch, True)
-        if not rev:
-            self.logging.error(f"{branch} not found in {self.state.repo}")
-            sys.exit(1)
         return rev
 
     def get_branch(self):

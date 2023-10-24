@@ -16,6 +16,7 @@ from apt_ostree.cmd.install import install
 from apt_ostree.cmd.options import debug_option
 from apt_ostree.cmd.options import workspace_option
 from apt_ostree.cmd import pass_state_context
+from apt_ostree.cmd.rebase import rebase
 from apt_ostree.cmd.remotes import remote
 from apt_ostree.cmd.repo import repo
 from apt_ostree.cmd.status import status
@@ -46,10 +47,12 @@ def main():
     cli(prog_name="apt-ostree")
 
 
+# apt-ostree subcommands
 cli.add_command(apt)
 cli.add_command(compose)
 cli.add_command(deploy)
 cli.add_command(install)
+cli.add_command(rebase)
 cli.add_command(remote)
 cli.add_command(repo)
 cli.add_command(status)

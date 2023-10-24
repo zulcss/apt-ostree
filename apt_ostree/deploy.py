@@ -89,9 +89,10 @@ class Deploy:
         with self.console.status("Cleaning up."):
             shutil.rmtree(rootfs)
 
-    def get_sysroot(self):
+    def get_sysroot(self, branch=None):
         """Checkout the commit to the specified directory."""
-        branch = self.ostree.get_branch()
+        if branch is None:
+            branch = self.ostree.get_branch()
         rev = self.ostree.ostree_ref(branch)
         with self.console.status(f"Checking out {rev[:10]}..."):
             self.workdir = self.workdir.joinpath(branch)
