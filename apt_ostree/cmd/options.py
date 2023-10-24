@@ -253,3 +253,21 @@ def url_option(f):
         required=True,
         callback=callback
     )(f)
+
+
+"""deploy"""
+
+
+def reboot_option(f):
+    """Reboot host."""
+    def callback(ctxt, param, value):
+        state = ctxt.ensure_object(State)
+        state.reboot = value
+        return value
+    return click.option(
+        "--reboot", "-r",
+        help="Reboot host",
+        is_flag=True,
+        default=False,
+        callback=callback
+    )(f)

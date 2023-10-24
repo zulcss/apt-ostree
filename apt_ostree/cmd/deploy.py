@@ -19,20 +19,14 @@ from apt_ostree.deploy import Deploy
 @pass_state_context
 @branch_argument
 @click.option(
-    "--update",
-    help="Update grub configuration.",
-    is_flag=True,
-    default=False
-)
-@click.option(
     "-r", "--reboot",
     help="Initiate a reboot after operation is complete.",
     is_flag=True,
     default=False
 )
-def deploy(state, branch, update, reboot):
+def deploy(state, branch, reboot):
     try:
-        Deploy(state).deploy(update, reboot)
+        Deploy(state).deploy(reboot)
     except KeyboardInterrupt:
         click.secho("\n" + ("Exiting at your request."))
         sys.exit(130)

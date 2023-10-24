@@ -102,7 +102,7 @@ class Deploy:
             self.ostree.ostree_checkout(branch, self.rootfs)
         return self.rootfs
 
-    def deploy(self, update, reboot):
+    def deploy(self, reboot):
         """Run ostree admin deploy."""
         ref = self.ostree.ostree_ref(self.state.branch)
         if not ref:
@@ -117,7 +117,7 @@ class Deploy:
             self.logging.error("Failed to deploy.")
             sys.exit(1)
 
-        if update:
+        if reboot:
             self.logging.info("Updating grub.")
             r = utils.run_command(
                 ["update-grub"]
@@ -126,7 +126,6 @@ class Deploy:
                 self.logging.error("Failed to update grub.")
                 sys.exit(1)
 
-        if reboot:
             self.logging.info("Rebooting now.")
             r = utils.run_command(
                 ["shutdown", "-r", "now"]
