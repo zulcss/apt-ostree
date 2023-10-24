@@ -15,6 +15,7 @@ from apt_ostree.cmd.compose.init import init
 from apt_ostree.cmd.compose.install import install
 from apt_ostree.cmd.compose.repo import repo
 from apt_ostree.cmd.compose.restore import restore
+from apt_ostree.cmd.compose.run import run
 from apt_ostree.cmd.compose.uninstall import uninstall
 from apt_ostree.cmd.compose.upgrade import upgrade
 
@@ -34,4 +35,5 @@ compose.add_command(install)
 compose.add_command(upgrade)
 compose.add_command(repo)
 compose.add_command(restore)
+compose.add_command(run)
 compose.add_command(uninstall)
