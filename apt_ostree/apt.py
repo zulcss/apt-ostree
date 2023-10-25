@@ -17,7 +17,7 @@ from apt_ostree.utils import run_sandbox_command
 
 class Apt:
     def __init__(self, state):
-        self.logging = logging.getLevelName(__name__)
+        self.logging = logging.getLogger(__name__)
         self.state = state
 
     def cache(self, rootfs):
