@@ -157,7 +157,7 @@ class Ostree:
         try:
             ret, rev = repo.resolve_rev(branch, True)
             print(rev)
-         except GLib.GError as e:
+        except GLib.GError as e:
             self.logging.error(f"{branch} does not exist.")
             raise
         return rev
