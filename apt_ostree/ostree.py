@@ -154,7 +154,12 @@ class Ostree:
     def ostree_ref(self, branch):
         """Find the commit id for a given reference."""
         repo = self.open_ostree()
-        ret, rev = repo.resolve_rev(branch, True)
+        try:
+            ret, rev = repo.resolve_rev(branch, True)
+            print(rev)
+         except GLib.GError as e:
+            self.logging.error(f"{branch} does not exist.")
+            raise
         return rev
 
     def get_branch(self):
@@ -213,7 +218,7 @@ class Ostree:
                     options,
                     None)
                 if check:
-                    self.looging.info(
+                    self.logging.info(
                         f"Successfully added {self.state.remote}.")
             except GLib.GError as e:
                 self.logging.warning(f"Failed to add remote: {e}")

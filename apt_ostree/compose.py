@@ -119,6 +119,10 @@ class Compose:
         """Checkout a commit from an ostree branch."""
         if branch is not None:
             rev = self.ostree.ostree_ref(branch)
+            print(rev)
+            if rev is None:
+                self.logging.error(f"{branch} not found.")
+                sys.exit(1)
 
         with self.console.status(f"Checking out {rev[:10]}..."):
             self.workdir = self.workdir.joinpath(branch)
